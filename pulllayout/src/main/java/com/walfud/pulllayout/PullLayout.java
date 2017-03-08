@@ -98,7 +98,7 @@ public class PullLayout extends ViewGroup {
                         double percentY = dy / (double) headerHeight;
                         if (mEdgeY) {
                             if (mOnPullDownListener != null) {
-                                mOnPullDownListener.onPullRefresh();
+                                mOnPullDownListener.onPullRefresh(mHeaderViewHolder, headerHeight, 1.0);
                             }
                         } else {
                             if (percentY > 0.75) {
@@ -106,7 +106,13 @@ public class PullLayout extends ViewGroup {
 
                                 if (mOnPullDownListener != null) {
                                     mOnPullDownListener.onPullDown(mHeaderViewHolder, headerHeight, 1.0);
-                                    mOnPullDownListener.onPullRefresh();
+                                    mOnPullDownListener.onPullRefresh(mHeaderViewHolder, headerHeight, 1.0);
+                                }
+                            } else {
+                                hideHeader();
+
+                                if (mOnPullDownListener != null) {
+                                    mOnPullDownListener.onPullDown(mHeaderViewHolder, 0, 0.0);
                                 }
                             }
                         }
@@ -145,10 +151,7 @@ public class PullLayout extends ViewGroup {
     }
 
     //
-//    public static class Config {
-//        public double maxPullablePercent;
-//        public double effectPercent;
-//    }
+
     public static abstract class ViewHolder {
         public View view;
 
@@ -158,6 +161,6 @@ public class PullLayout extends ViewGroup {
     }
     public interface OnPullDownListener<T extends ViewHolder> {
         void onPullDown(T headerViewHolder, int dy, double py);
-        void onPullRefresh();
+        void onPullRefresh(T headerViewHolder, int dy, double py);
     }
 }

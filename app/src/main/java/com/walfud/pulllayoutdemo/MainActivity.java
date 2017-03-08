@@ -1,5 +1,6 @@
 package com.walfud.pulllayoutdemo;
 
+import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
@@ -36,11 +37,20 @@ public class MainActivity extends Activity {
             }
 
             @Override
-            public void onPullRefresh() {
+            public void onPullRefresh(HeaderViewHolder headerViewHolder, int dy, double py) {
                 Log.e(TAG, "onPullRefresh: ");
+
+                ImageView iv = headerViewHolder.iv;
+                TextView tv = headerViewHolder.tv;
+                final ObjectAnimator rotation = ObjectAnimator.ofFloat(iv, "rotation", iv.getRotation(), iv.getRotation() - 360);
+                rotation.setDuration(1000);
+                rotation.setRepeatCount(100);
+                rotation.start();
+
                 mPl.postDelayed(new Runnable() {
                     @Override
                     public void run() {
+                        rotation.end();
                         mPl.hideHeader();
                     }
                 }, 3 * 1000);
