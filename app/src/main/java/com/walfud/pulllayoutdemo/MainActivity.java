@@ -2,6 +2,7 @@ package com.walfud.pulllayoutdemo;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -10,6 +11,8 @@ import android.widget.TextView;
 import com.walfud.pulllayout.PullLayout;
 
 public class MainActivity extends Activity {
+
+    public static final String TAG = "PullLayoutDemo";
 
     private PullLayout mPl;
 
@@ -23,13 +26,18 @@ public class MainActivity extends Activity {
         mPl.setHeader(new HeaderViewHolder(header));
         mPl.setOnEventListener(new PullLayout.OnPullDownListener<HeaderViewHolder>() {
             @Override
-            public void onPullDown(HeaderViewHolder headerViewHolder, int dy, double percent) {
+            public void onPullDown(HeaderViewHolder headerViewHolder, int dy, double py) {
                 ImageView iv = headerViewHolder.iv;
                 TextView tv = headerViewHolder.tv;
 
-                iv.setRotation((float) (percent * 360));
-                tv.setText(String.format("onPullDown: dy=%d, percent=%.2f", dy, percent));
+                iv.setRotation((float) (py * 360));
+                tv.setText(String.format("onPullDown: dy=%d, py=%.2f", dy, py));
+                Log.e(TAG, String.format("onPullDown: py=%.2f", py));
+            }
 
+            @Override
+            public void onPullRefresh() {
+                Log.e(TAG, "onPullRefresh: ");
                 mPl.postDelayed(new Runnable() {
                     @Override
                     public void run() {

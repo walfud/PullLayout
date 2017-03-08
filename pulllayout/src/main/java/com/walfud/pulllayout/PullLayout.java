@@ -60,14 +60,14 @@ public class PullLayout extends ViewGroup {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int y = (int) event.getY();
+        int dy = y - mDownY;
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mDownY = y;
                 mEdgeY = false;
                 return true;
             case MotionEvent.ACTION_MOVE: {
-                int dy = y - mDownY;
-                if (0 < dy) {
+                if (dy > 0) {
                     if (mHeaderViewHolder != null) {
                         int headerHeight = mHeaderViewHolder.view.getHeight();
                         double percentY = dy / (double) headerHeight;
@@ -91,6 +91,28 @@ public class PullLayout extends ViewGroup {
                 Log.i(TAG, String.format("onTouchEvent: ACTION_MOVE y=%d, dy=%d", y, dy));
                 return true;
             }
+            case MotionEvent.ACTION_UP:
+                if (dy > 0) {
+                    if (mHeaderViewHolder != null) {
+                        int headerHeight = mHeaderViewHolder.view.getHeight();
+                        double percentY = dy / (double) headerHeight;
+                        if (mEdgeY) {
+                            if (mOnPullDownListener != null) {
+                                mOnPullDownListener.onPullRefresh();
+                            }
+                        } else {
+                            if (percentY > 0.75) {
+                                showHeader();
+
+                                if (mOnPullDownListener != null) {
+                                    mOnPullDownListener.onPullDown(mHeaderViewHolder, headerHeight, 1.0);
+                                    mOnPullDownListener.onPullRefresh();
+                                }
+                            }
+                        }
+                    }
+                }
+                return true;
             default:
                 return false;
         }
@@ -108,6 +130,14 @@ public class PullLayout extends ViewGroup {
         return this;
     }
 
+    public PullLayout showHeader() {
+        if (mHeaderViewHolder != null) {
+            int headerHeight = mHeaderViewHolder.view.getHeight();
+            scrollTo(0, -headerHeight);
+        }
+
+        return this;
+    }
     public PullLayout hideHeader() {
         scrollTo(0, 0);
 
@@ -127,6 +157,7 @@ public class PullLayout extends ViewGroup {
         }
     }
     public interface OnPullDownListener<T extends ViewHolder> {
-        void onPullDown(T headerViewHolder, int dy, double percent);
+        void onPullDown(T headerViewHolder, int dy, double py);
+        void onPullRefresh();
     }
 }
