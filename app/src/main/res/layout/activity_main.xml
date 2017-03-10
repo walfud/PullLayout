@@ -13,7 +13,7 @@
         <TextView
             android:layout_width="100dp"
             android:layout_height="100dp"
-            android:text="abcdefghigklmnopqrstuvwxyz1234567890"
-            android:background="#FF00FF00"/>
+            android:text="Click Me"
+            android:onClick="onClick"/>
     </com.walfud.pulllayout.PullLayout>
 </RelativeLayout>

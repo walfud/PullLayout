@@ -65,7 +65,10 @@ public class PullLayout extends ViewGroup {
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                return true;
+                mPointerStart = mPointerOld = (int) ev.getY();
+                mStartScroll = getScrollY();
+                mIsTouching = true;
+                return false;
             case MotionEvent.ACTION_MOVE:
                 return true;
             default:
@@ -84,9 +87,6 @@ public class PullLayout extends ViewGroup {
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                mPointerStart = mPointerOld = mPointerNow;
-                mStartScroll = getScrollY();
-                mIsTouching = true;
                 isHandle = true;
                 break;
             case MotionEvent.ACTION_MOVE: {

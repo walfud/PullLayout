@@ -12,6 +12,7 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.BounceInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.walfud.pulllayout.PullLayout;
 
@@ -30,6 +31,26 @@ public class MainActivity extends Activity {
         final View header = LayoutInflater.from(this).inflate(R.layout.header_pulllayout, mPl, false);
         mPl.setHeader(new HeaderViewHolder(header));
         mPl.setOnEventListener(new PullLayout.OnPullListener<HeaderViewHolder>() {
+            private ViewPropertyAnimator mHeaderAnim;
+
+            private void headerAnim(final View view) {
+                mHeaderAnim = view.animate().alpha(0.6f).scaleX(1.3f).scaleY(1.3f).setInterpolator(new AccelerateDecelerateInterpolator()).setDuration(200).setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+
+                        mHeaderAnim = view.animate().alpha(1.0f).scaleX(1.0f).scaleY(1.0f).setInterpolator(new BounceInterpolator()).setDuration(600).setListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                super.onAnimationEnd(animation);
+
+                                headerAnim(view);
+                            }
+                        });
+                    }
+                });
+            }
+
             @Override
             public void onPullDown(HeaderViewHolder headerViewHolder, int dy, double py) {
                 ImageView iv = headerViewHolder.iv;
@@ -65,24 +86,8 @@ public class MainActivity extends Activity {
         });
     }
 
-    private ViewPropertyAnimator mHeaderAnim;
-
-    private void headerAnim(final View view) {
-        mHeaderAnim = view.animate().alpha(0.6f).scaleX(1.3f).scaleY(1.3f).setInterpolator(new AccelerateDecelerateInterpolator()).setDuration(200).setListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                super.onAnimationEnd(animation);
-
-                mHeaderAnim = view.animate().alpha(1.0f).scaleX(1.0f).scaleY(1.0f).setInterpolator(new BounceInterpolator()).setDuration(600).setListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        super.onAnimationEnd(animation);
-
-                        headerAnim(view);
-                    }
-                });
-            }
-        });
+    public void onClick(View v) {
+        Toast.makeText(MainActivity.this, "Click Me", Toast.LENGTH_SHORT).show();
     }
 
     public static class HeaderViewHolder extends PullLayout.ViewHolder {
