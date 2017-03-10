@@ -42,7 +42,7 @@ public class MainActivity extends Activity {
             }
 
             @Override
-            public void onRefresh(HeaderViewHolder headerViewHolder, int dy, double py) {
+            public void onRefresh(HeaderViewHolder headerViewHolder) {
                 Log.e(TAG, "onRefresh: ");
 
                 final ImageView iv = headerViewHolder.iv;

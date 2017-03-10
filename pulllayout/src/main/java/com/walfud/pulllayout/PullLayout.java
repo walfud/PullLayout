@@ -121,7 +121,7 @@ public class PullLayout extends ViewGroup {
                             @Override
                             public void run() {
                                 if (mOnPullListener != null) {
-                                    mOnPullListener.onRefresh(mHeaderViewHolder, headerHeight, 1.0);
+                                    mOnPullListener.onRefresh(mHeaderViewHolder);
                                 }
                             }
                         });
@@ -211,6 +211,6 @@ public class PullLayout extends ViewGroup {
     public interface OnPullListener<T extends ViewHolder> {
         void onPullDown(T headerViewHolder, int dy, double py);
 
-        void onRefresh(T headerViewHolder, int dy, double py);
+        void onRefresh(T headerViewHolder);
     }
 }
