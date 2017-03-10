@@ -20,6 +20,8 @@ public class PullLayout extends ViewGroup {
     private ViewHolder mHeaderViewHolder;
     private OnPullListener mOnPullListener;
     private int mPointerStart, mPointerOld, mPointerNow;
+    private int mStartScroll;
+    private boolean mIsTouching;
 
     public PullLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -27,7 +29,7 @@ public class PullLayout extends ViewGroup {
         setOnScrollChangeListener(new OnScrollChangeListener() {
             @Override
             public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
-                Log.i(TAG, String.format("onScrollChange: scrollCurr=%d, scrollOld=%d", scrollY, oldScrollY));
+                Log.i(TAG, String.format("onScrollChange: scrollCurr=%d, scrollOld=%d, foo=%d", scrollY, oldScrollY, getScrollY()));
 
                 if (mOnPullListener != null) {
                     int distance = Math.abs(scrollY);
@@ -72,19 +74,18 @@ public class PullLayout extends ViewGroup {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (mFling) {
-            return false;
-        }
-
         mPointerNow = (int) event.getY();
-        int distance = mPointerNow - mPointerStart;
+        int distance = mPointerNow - mPointerStart + Math.abs(mStartScroll);
         boolean isHandle = false;
 
-        Log.i(TAG, String.format("onTouchEvent(%d): start=%d, curr=%d, distance=%d", event.getAction(), mPointerStart, (int) event.getY(), distance));
+        Log.i(TAG, String.format("onTouchEvent(%d): start=%d, curr=%d, distance=%d, scroll=%d",
+                event.getAction(), mPointerStart, mPointerNow, distance, getScrollY()));
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mPointerStart = mPointerOld = mPointerNow;
+                mStartScroll = getScrollY();
+                mIsTouching = true;
                 isHandle = true;
                 break;
             case MotionEvent.ACTION_MOVE: {
@@ -99,7 +100,7 @@ public class PullLayout extends ViewGroup {
                             isHandle = true;
                         } else {
                             // Over Down
-                            scrollTo(0, - (int) (headerHeight * MAX_THRESHOLD));
+                            scrollTo(0, -(int) (headerHeight * MAX_THRESHOLD));
                         }
                     }
                 }
@@ -107,6 +108,7 @@ public class PullLayout extends ViewGroup {
             }
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
+                mIsTouching = false;
                 if (mHeaderViewHolder != null) {
                     final int headerHeight = mHeaderViewHolder.view.getHeight();
                     if (0 < distance && distance < headerHeight) {
@@ -164,10 +166,10 @@ public class PullLayout extends ViewGroup {
     }
 
     // internal
-    private boolean mFling;
-
     private boolean scrollY(final int to, final Runnable endWith) {
-        mFling = true;
+        if (mIsTouching) {
+            return false;
+        }
 
         int from = getScrollY();
         if (from < to) {
@@ -189,7 +191,6 @@ public class PullLayout extends ViewGroup {
                 }
             });
         } else {
-            mFling = false;
             post(endWith);
             return false;
         }
