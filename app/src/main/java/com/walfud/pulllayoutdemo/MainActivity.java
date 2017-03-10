@@ -1,11 +1,15 @@
 package com.walfud.pulllayoutdemo;
 
-import android.animation.ObjectAnimator;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewPropertyAnimator;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.BounceInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -31,7 +35,8 @@ public class MainActivity extends Activity {
                 ImageView iv = headerViewHolder.iv;
                 TextView tv = headerViewHolder.tv;
 
-                iv.setRotation((float) (py * 360));
+                iv.setScaleX((float) Math.min(py, 1.3));
+                iv.setScaleY((float) Math.min(py, 1.3));
                 tv.setText(String.format("onPullDown: dy=%d, py=%.2f", dy, py));
                 Log.e(TAG, String.format("onPullDown: py=%.2f", py));
             }
@@ -40,20 +45,41 @@ public class MainActivity extends Activity {
             public void onRefresh(HeaderViewHolder headerViewHolder, int dy, double py) {
                 Log.e(TAG, "onRefresh: ");
 
-                ImageView iv = headerViewHolder.iv;
+                final ImageView iv = headerViewHolder.iv;
                 TextView tv = headerViewHolder.tv;
-                final ObjectAnimator rotation = ObjectAnimator.ofFloat(iv, "rotation", iv.getRotation(), iv.getRotation() - 360);
-                rotation.setDuration(1000);
-                rotation.setRepeatCount(100);
-                rotation.start();
+
+                headerAnim(iv);
 
                 mPl.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        rotation.end();
+                        if (mHeaderAnim != null) {
+                            mHeaderAnim.cancel();
+                            mHeaderAnim = null;
+                        }
                         mPl.hideHeader();
                     }
-                }, 1 * 1000);
+                }, 3 * 1000);
+            }
+        });
+    }
+
+    private ViewPropertyAnimator mHeaderAnim;
+
+    private void headerAnim(final View view) {
+        mHeaderAnim = view.animate().alpha(0.6f).scaleX(1.3f).scaleY(1.3f).setInterpolator(new AccelerateDecelerateInterpolator()).setDuration(200).setListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+
+                mHeaderAnim = view.animate().alpha(1.0f).scaleX(1.0f).scaleY(1.0f).setInterpolator(new BounceInterpolator()).setDuration(600).setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+
+                        headerAnim(view);
+                    }
+                });
             }
         });
     }
