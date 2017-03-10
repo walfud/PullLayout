@@ -15,7 +15,6 @@ public class PullLayout extends ViewGroup {
 
     public static final String TAG = "PullLayout";
 
-    private static final double MIN_THRESHOLD = 0.5;
     private static final double MAX_THRESHOLD = 2;
 
     private ViewHolder mHeaderViewHolder;
@@ -110,10 +109,10 @@ public class PullLayout extends ViewGroup {
             case MotionEvent.ACTION_UP:
                 if (mHeaderViewHolder != null) {
                     final int headerHeight = mHeaderViewHolder.view.getHeight();
-                    if (0 < distance && distance < headerHeight * MIN_THRESHOLD) {
+                    if (0 < distance && distance < headerHeight) {
                         // Back to top
                         scrollY(0, null);
-                    } else if (headerHeight * MIN_THRESHOLD <= distance) {
+                    } else if (headerHeight <= distance) {
                         // Scroll to refresh
                         scrollY(-headerHeight, new Runnable() {
                             @Override
