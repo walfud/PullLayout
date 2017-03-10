@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
                 TextView tv = headerViewHolder.tv;
 
                 headerAnim(iv);
+                tv.setText(String.format("onRefresh"));
 
                 mPl.postDelayed(new Runnable() {
                     @Override
