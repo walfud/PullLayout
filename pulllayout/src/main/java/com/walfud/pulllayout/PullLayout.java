@@ -16,6 +16,7 @@ public class PullLayout extends ViewGroup {
     public static final String TAG = "PullLayout";
 
     private static final double MAX_THRESHOLD = 2;
+    private static final int FLING_SPEED = 20;
 
     private ViewHolder mHeaderViewHolder;
     private OnPullListener mOnPullListener;
@@ -174,7 +175,7 @@ public class PullLayout extends ViewGroup {
         int from = getScrollY();
         if (from < to) {
             // from >>> to
-            scrollTo(0, Math.min(from + 9, to));
+            scrollTo(0, Math.min(from + FLING_SPEED, to));
             postOnAnimation(new Runnable() {
                 @Override
                 public void run() {
@@ -183,7 +184,7 @@ public class PullLayout extends ViewGroup {
             });
         } else if (to < from) {
             // to <<< from
-            scrollTo(0, Math.max(from - 9, to));
+            scrollTo(0, Math.max(from - FLING_SPEED, to));
             postOnAnimation(new Runnable() {
                 @Override
                 public void run() {
