@@ -15,11 +15,29 @@ public class PullLayout extends ViewGroup {
 
     public static final String TAG = "PullLayout";
 
+    private static final double MIN_THRESHOLD = 0.5;
+    private static final double MAX_THRESHOLD = 2;
+
     private ViewHolder mHeaderViewHolder;
-    private OnPullDownListener mOnPullDownListener;
+    private OnPullListener mOnPullListener;
+    private int mPointerStart, mPointerOld, mPointerNow;
 
     public PullLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
+
+        setOnScrollChangeListener(new OnScrollChangeListener() {
+            @Override
+            public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
+                Log.i(TAG, String.format("onScrollChange: scrollCurr=%d, scrollOld=%d", scrollY, oldScrollY));
+
+                if (mOnPullListener != null) {
+                    int distance = Math.abs(scrollY);
+                    if (scrollY < 0) {
+                        mOnPullListener.onPullDown(mHeaderViewHolder, distance, distance / (double) mHeaderViewHolder.view.getHeight());
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -46,82 +64,76 @@ public class PullLayout extends ViewGroup {
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 return true;
-            case MotionEvent.ACTION_MOVE: {
-
+            case MotionEvent.ACTION_MOVE:
                 return true;
-            }
             default:
                 return false;
         }
     }
 
-    private int mDownY;
-    private boolean mEdgeY;
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        int y = (int) event.getY();
-        int dy = y - mDownY;
+        if (mFling) {
+            return false;
+        }
+
+        mPointerNow = (int) event.getY();
+        int distance = mPointerNow - mPointerStart;
+        boolean isHandle = false;
+
+        Log.i(TAG, String.format("onTouchEvent(%d): start=%d, curr=%d, distance=%d", event.getAction(), mPointerStart, (int) event.getY(), distance));
+
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                mDownY = y;
-                mEdgeY = false;
-                return true;
+                mPointerStart = mPointerOld = mPointerNow;
+                isHandle = true;
+                break;
             case MotionEvent.ACTION_MOVE: {
-                if (dy > 0) {
-                    if (mHeaderViewHolder != null) {
-                        int headerHeight = mHeaderViewHolder.view.getHeight();
-                        double percentY = dy / (double) headerHeight;
-                        if (dy < mHeaderViewHolder.view.getHeight()) {
-                            scrollTo(0, -dy);
-                            mOnPullDownListener.onPullDown(mHeaderViewHolder, dy, percentY);
-
-                            Log.e(TAG, String.format("onTouchEvent: ACTION_MOVE y=%d, dy=%d, percent=%.2f, headerHeight=%d", y, dy, percentY, headerHeight));
+                if (mHeaderViewHolder != null) {
+                    int headerHeight = mHeaderViewHolder.view.getHeight();
+                    if (headerHeight != 0) {
+                        if (distance < 0) {
+                            // Over Up
+                            scrollTo(0, 0);
+                        } else if (0 <= distance && distance <= headerHeight * MAX_THRESHOLD) {
+                            scrollTo(0, -distance);
+                            isHandle = true;
                         } else {
-                            if (!mEdgeY) {
-                                mEdgeY = true;
-
-                                scrollTo(0, -dy);
-                                mOnPullDownListener.onPullDown(mHeaderViewHolder, headerHeight, 1.0);
-
-                                Log.e(TAG, String.format("onTouchEvent: ACTION_MOVE EDGE y=%d, dy=%d, percent=%.2f, headerHeight=%d", y, dy, 1.0, headerHeight));
-                            }
+                            // Over Down
+                            scrollTo(0, - (int) (headerHeight * MAX_THRESHOLD));
                         }
                     }
                 }
-                Log.i(TAG, String.format("onTouchEvent: ACTION_MOVE y=%d, dy=%d", y, dy));
-                return true;
+                break;
             }
+            case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
-                if (dy > 0) {
-                    if (mHeaderViewHolder != null) {
-                        int headerHeight = mHeaderViewHolder.view.getHeight();
-                        double percentY = dy / (double) headerHeight;
-                        if (mEdgeY) {
-                            if (mOnPullDownListener != null) {
-                                mOnPullDownListener.onPullRefresh(mHeaderViewHolder, headerHeight, 1.0);
-                            }
-                        } else {
-                            if (percentY > 0.75) {
-                                showHeader();
-
-                                if (mOnPullDownListener != null) {
-                                    mOnPullDownListener.onPullDown(mHeaderViewHolder, headerHeight, 1.0);
-                                    mOnPullDownListener.onPullRefresh(mHeaderViewHolder, headerHeight, 1.0);
-                                }
-                            } else {
-                                hideHeader();
-
-                                if (mOnPullDownListener != null) {
-                                    mOnPullDownListener.onPullDown(mHeaderViewHolder, 0, 0.0);
+                if (mHeaderViewHolder != null) {
+                    final int headerHeight = mHeaderViewHolder.view.getHeight();
+                    if (0 < distance && distance < headerHeight * MIN_THRESHOLD) {
+                        // Back to top
+                        scrollY(0, null);
+                    } else if (headerHeight * MIN_THRESHOLD <= distance) {
+                        // Scroll to refresh
+                        scrollY(-headerHeight, new Runnable() {
+                            @Override
+                            public void run() {
+                                if (mOnPullListener != null) {
+                                    mOnPullListener.onRefresh(mHeaderViewHolder, headerHeight, 1.0);
                                 }
                             }
-                        }
+                        });
                     }
                 }
-                return true;
+                isHandle = true;
+                break;
             default:
-                return false;
+                isHandle = false;
+                break;
         }
+
+        mPointerOld = mPointerNow;
+        return isHandle;
     }
 
     // Function
@@ -131,8 +143,9 @@ public class PullLayout extends ViewGroup {
         mHeaderViewHolder = header;
         return this;
     }
-    public PullLayout setOnEventListener(OnPullDownListener listener) {
-        mOnPullDownListener = listener;
+
+    public PullLayout setOnEventListener(OnPullListener listener) {
+        mOnPullListener = listener;
         return this;
     }
 
@@ -144,14 +157,48 @@ public class PullLayout extends ViewGroup {
 
         return this;
     }
+
     public PullLayout hideHeader() {
-        scrollTo(0, 0);
+        scrollY(0, null);
 
         return this;
     }
 
-    //
+    // internal
+    private boolean mFling;
 
+    private boolean scrollY(final int to, final Runnable endWith) {
+        mFling = true;
+
+        int from = getScrollY();
+        if (from < to) {
+            // from >>> to
+            scrollTo(0, Math.min(from + 9, to));
+            postOnAnimation(new Runnable() {
+                @Override
+                public void run() {
+                    scrollY(to, endWith);
+                }
+            });
+        } else if (to < from) {
+            // to <<< from
+            scrollTo(0, Math.max(from - 9, to));
+            postOnAnimation(new Runnable() {
+                @Override
+                public void run() {
+                    scrollY(to, endWith);
+                }
+            });
+        } else {
+            mFling = false;
+            post(endWith);
+            return false;
+        }
+
+        return true;
+    }
+
+    //
     public static abstract class ViewHolder {
         public View view;
 
@@ -159,8 +206,10 @@ public class PullLayout extends ViewGroup {
             this.view = view;
         }
     }
-    public interface OnPullDownListener<T extends ViewHolder> {
+
+    public interface OnPullListener<T extends ViewHolder> {
         void onPullDown(T headerViewHolder, int dy, double py);
-        void onPullRefresh(T headerViewHolder, int dy, double py);
+
+        void onRefresh(T headerViewHolder, int dy, double py);
     }
 }

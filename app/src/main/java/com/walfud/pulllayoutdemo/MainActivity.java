@@ -13,7 +13,7 @@ import com.walfud.pulllayout.PullLayout;
 
 public class MainActivity extends Activity {
 
-    public static final String TAG = "PullLayoutDemo";
+    public static final String TAG = "MainActivity";
 
     private PullLayout mPl;
 
@@ -25,7 +25,7 @@ public class MainActivity extends Activity {
 
         final View header = LayoutInflater.from(this).inflate(R.layout.header_pulllayout, mPl, false);
         mPl.setHeader(new HeaderViewHolder(header));
-        mPl.setOnEventListener(new PullLayout.OnPullDownListener<HeaderViewHolder>() {
+        mPl.setOnEventListener(new PullLayout.OnPullListener<HeaderViewHolder>() {
             @Override
             public void onPullDown(HeaderViewHolder headerViewHolder, int dy, double py) {
                 ImageView iv = headerViewHolder.iv;
@@ -37,8 +37,8 @@ public class MainActivity extends Activity {
             }
 
             @Override
-            public void onPullRefresh(HeaderViewHolder headerViewHolder, int dy, double py) {
-                Log.e(TAG, "onPullRefresh: ");
+            public void onRefresh(HeaderViewHolder headerViewHolder, int dy, double py) {
+                Log.e(TAG, "onRefresh: ");
 
                 ImageView iv = headerViewHolder.iv;
                 TextView tv = headerViewHolder.tv;
@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
                         rotation.end();
                         mPl.hideHeader();
                     }
-                }, 3 * 1000);
+                }, 1 * 1000);
             }
         });
     }
