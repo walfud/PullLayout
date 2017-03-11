@@ -173,15 +173,12 @@ public class PullLayout extends ViewGroup {
     }
 
     // Function
-    public PullLayout setHeader(ViewHolder header) {
+    public PullLayout setHeader(ViewHolder header, OnPullListener listener) {
         removeView(header.view);
         addView(header.view);
         mHeaderViewHolder = header;
-        return this;
-    }
-
-    public PullLayout setOnPullDownListener(OnPullListener listener) {
         mOnPullDownListener = listener;
+
         return this;
     }
 
@@ -200,15 +197,12 @@ public class PullLayout extends ViewGroup {
         return this;
     }
 
-    public PullLayout setFooter(ViewHolder footer) {
+    public PullLayout setFooter(ViewHolder footer, OnPullListener listener) {
         removeView(footer.view);
         addView(footer.view);
         mFooterViewHolder = footer;
-        return this;
-    }
-
-    public PullLayout setOnPullUpListener(OnPullListener listener) {
         mOnPullUpListener = listener;
+
         return this;
     }
 

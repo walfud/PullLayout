@@ -30,8 +30,7 @@ public class MainActivity extends Activity {
 
         // Header
         final View header = LayoutInflater.from(this).inflate(R.layout.header_pulllayout, mPl, false);
-        mPl.setHeader(new HeaderViewHolder(header));
-        mPl.setOnPullDownListener(new PullLayout.OnPullListener<HeaderViewHolder>() {
+        mPl.setHeader(new HeaderViewHolder(header), new PullLayout.OnPullListener<HeaderViewHolder>() {
             private ViewPropertyAnimator mAnim;
 
             private void anim(final View view) {
@@ -88,8 +87,7 @@ public class MainActivity extends Activity {
 
         // Footer
         final View footer = LayoutInflater.from(this).inflate(R.layout.footer_pulllayout, mPl, false);
-        mPl.setFooter(new FooterViewHolder(footer));
-        mPl.setOnPullUpListener(new PullLayout.OnPullListener<FooterViewHolder>() {
+        mPl.setFooter(new FooterViewHolder(footer), new PullLayout.OnPullListener<FooterViewHolder>() {
             private ViewPropertyAnimator mAnim;
 
             private void anim(final View view) {
@@ -138,7 +136,7 @@ public class MainActivity extends Activity {
                             mAnim.cancel();
                             mAnim = null;
                         }
-                        mPl.hideHeader();
+                        mPl.hideFooter();
                     }
                 }, 3 * 1000);
             }
