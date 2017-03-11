@@ -28,23 +28,24 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         mPl = (PullLayout) findViewById(R.id.pl);
 
+        // Header
         final View header = LayoutInflater.from(this).inflate(R.layout.header_pulllayout, mPl, false);
         mPl.setHeader(new HeaderViewHolder(header));
         mPl.setOnPullDownListener(new PullLayout.OnPullListener<HeaderViewHolder>() {
-            private ViewPropertyAnimator mHeaderAnim;
+            private ViewPropertyAnimator mAnim;
 
-            private void headerAnim(final View view) {
-                mHeaderAnim = view.animate().alpha(0.6f).scaleX(1.3f).scaleY(1.3f).setInterpolator(new AccelerateDecelerateInterpolator()).setDuration(200).setListener(new AnimatorListenerAdapter() {
+            private void anim(final View view) {
+                mAnim = view.animate().alpha(0.6f).scaleX(1.3f).scaleY(1.3f).setInterpolator(new AccelerateDecelerateInterpolator()).setDuration(200).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         super.onAnimationEnd(animation);
 
-                        mHeaderAnim = view.animate().alpha(1.0f).scaleX(1.0f).scaleY(1.0f).setInterpolator(new BounceInterpolator()).setDuration(600).setListener(new AnimatorListenerAdapter() {
+                        mAnim = view.animate().alpha(1.0f).scaleX(1.0f).scaleY(1.0f).setInterpolator(new BounceInterpolator()).setDuration(600).setListener(new AnimatorListenerAdapter() {
                             @Override
                             public void onAnimationEnd(Animator animation) {
                                 super.onAnimationEnd(animation);
 
-                                headerAnim(view);
+                                anim(view);
                             }
                         });
                     }
@@ -69,15 +70,73 @@ public class MainActivity extends Activity {
                 final ImageView iv = headerViewHolder.iv;
                 TextView tv = headerViewHolder.tv;
 
-                headerAnim(iv);
+                anim(iv);
                 tv.setText(String.format("onRefresh"));
 
                 mPl.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        if (mHeaderAnim != null) {
-                            mHeaderAnim.cancel();
-                            mHeaderAnim = null;
+                        if (mAnim != null) {
+                            mAnim.cancel();
+                            mAnim = null;
+                        }
+                        mPl.hideHeader();
+                    }
+                }, 3 * 1000);
+            }
+        });
+
+        // Footer
+        final View footer = LayoutInflater.from(this).inflate(R.layout.footer_pulllayout, mPl, false);
+        mPl.setFooter(new FooterViewHolder(footer));
+        mPl.setOnPullUpListener(new PullLayout.OnPullListener<FooterViewHolder>() {
+            private ViewPropertyAnimator mAnim;
+
+            private void anim(final View view) {
+                mAnim = view.animate().alpha(0.6f).scaleX(1.3f).scaleY(1.3f).setInterpolator(new AccelerateDecelerateInterpolator()).setDuration(200).setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+
+                        mAnim = view.animate().alpha(1.0f).scaleX(1.0f).scaleY(1.0f).setInterpolator(new BounceInterpolator()).setDuration(600).setListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                super.onAnimationEnd(animation);
+
+                                anim(view);
+                            }
+                        });
+                    }
+                });
+            }
+
+            @Override
+            public void onPull(FooterViewHolder footerViewHolder, int dy, double py) {
+                ImageView iv = footerViewHolder.iv;
+                TextView tv = footerViewHolder.tv;
+
+                iv.setScaleX((float) Math.min(py, 1.3));
+                iv.setScaleY((float) Math.min(py, 1.3));
+                tv.setText(String.format("onPull: dy=%d, py=%.2f", dy, py));
+                Log.e(TAG, String.format("onPull: py=%.2f", py));
+            }
+
+            @Override
+            public void onRefresh(FooterViewHolder footerViewHolder) {
+                Log.e(TAG, "onRefresh: ");
+
+                final ImageView iv = footerViewHolder.iv;
+                TextView tv = footerViewHolder.tv;
+
+                anim(iv);
+                tv.setText(String.format("onRefresh"));
+
+                mPl.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mAnim != null) {
+                            mAnim.cancel();
+                            mAnim = null;
                         }
                         mPl.hideHeader();
                     }
@@ -96,6 +155,18 @@ public class MainActivity extends Activity {
         public TextView tv;
 
         public HeaderViewHolder(View view) {
+            super(view);
+            iv = (ImageView) view.findViewById(R.id.iv);
+            tv = (TextView) view.findViewById(R.id.tv);
+        }
+    }
+
+    public static class FooterViewHolder extends PullLayout.ViewHolder {
+
+        public ImageView iv;
+        public TextView tv;
+
+        public FooterViewHolder(View view) {
             super(view);
             iv = (ImageView) view.findViewById(R.id.iv);
             tv = (TextView) view.findViewById(R.id.tv);
