@@ -18,8 +18,8 @@ public class PullLayout extends ViewGroup {
     private static final double MAX_THRESHOLD = 2;
     private static final int FLING_SPEED = 20;
 
-    private ViewHolder mHeaderViewHolder;
-    private OnPullListener mOnPullListener;
+    private ViewHolder mHeaderViewHolder, mFooterViewHolder;
+    private OnPullListener mOnPullDownListener, mOnPullUpListener;
     private int mPointerStart, mPointerOld, mPointerNow;
     private int mStartScroll;
     private boolean mIsTouching;
@@ -32,10 +32,10 @@ public class PullLayout extends ViewGroup {
             public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
                 Log.i(TAG, String.format("onScrollChange: scrollCurr=%d, scrollOld=%d, foo=%d", scrollY, oldScrollY, getScrollY()));
 
-                if (mOnPullListener != null) {
+                if (mOnPullDownListener != null) {
                     int distance = Math.abs(scrollY);
                     if (scrollY < 0) {
-                        mOnPullListener.onPullDown(mHeaderViewHolder, distance, distance / (double) mHeaderViewHolder.view.getHeight());
+                        mOnPullDownListener.onPull(mHeaderViewHolder, distance, distance / (double) mHeaderViewHolder.view.getHeight());
                     }
                 }
             }
@@ -93,16 +93,22 @@ public class PullLayout extends ViewGroup {
                 if (mHeaderViewHolder != null) {
                     int headerHeight = mHeaderViewHolder.view.getHeight();
                     if (headerHeight != 0) {
-                        if (distance < 0) {
-                            // Over Up
-                            scrollTo(0, 0);
-                        } else if (0 <= distance && distance <= headerHeight * MAX_THRESHOLD) {
+                        if (0 <= distance && distance <= headerHeight * MAX_THRESHOLD) {
                             scrollTo(0, -distance);
                             isHandle = true;
                         } else {
                             // Over Down
                             scrollTo(0, -(int) (headerHeight * MAX_THRESHOLD));
                         }
+                    }
+                }
+
+                // TODO: 怎么分发 header/footer 谁处理事件
+                // 涉及到开始点击, 和已有 scroll 的情况下点击
+                if (mFooterViewHolder != null) {
+                    int footerHeight = mFooterViewHolder.view.getHeight();
+                    if (footerHeight != 0) {
+                        if (distance)
                     }
                 }
                 break;
@@ -120,8 +126,8 @@ public class PullLayout extends ViewGroup {
                         scrollY(-headerHeight, new Runnable() {
                             @Override
                             public void run() {
-                                if (mOnPullListener != null) {
-                                    mOnPullListener.onRefresh(mHeaderViewHolder);
+                                if (mOnPullDownListener != null) {
+                                    mOnPullDownListener.onRefresh(mHeaderViewHolder);
                                 }
                             }
                         });
@@ -139,18 +145,16 @@ public class PullLayout extends ViewGroup {
     }
 
     // Function
-    public <H extends ViewHolder> PullLayout setHeader(H header) {
+    public PullLayout setHeader(ViewHolder header) {
         removeView(header.view);
         addView(header.view);
         mHeaderViewHolder = header;
         return this;
     }
-
-    public PullLayout setOnEventListener(OnPullListener listener) {
-        mOnPullListener = listener;
+    public PullLayout setOnPullDownListener(OnPullListener listener) {
+        mOnPullDownListener = listener;
         return this;
     }
-
     public PullLayout showHeader() {
         if (mHeaderViewHolder != null) {
             int headerHeight = mHeaderViewHolder.view.getHeight();
@@ -159,8 +163,31 @@ public class PullLayout extends ViewGroup {
 
         return this;
     }
-
     public PullLayout hideHeader() {
+        scrollY(0, null);
+
+        return this;
+    }
+
+    public PullLayout setFooter(ViewHolder footer) {
+        removeView(footer.view);
+        addView(footer.view);
+        mFooterViewHolder = footer;
+        return this;
+    }
+    public PullLayout setOnPullUpListener(OnPullListener listener) {
+        mOnPullUpListener = listener;
+        return this;
+    }
+    public PullLayout showFooter() {
+        if (mFooterViewHolder != null) {
+            int footerHeight = mFooterViewHolder.view.getHeight();
+            scrollTo(0, footerHeight);
+        }
+
+        return this;
+    }
+    public PullLayout hideFooter() {
         scrollY(0, null);
 
         return this;
@@ -209,8 +236,7 @@ public class PullLayout extends ViewGroup {
     }
 
     public interface OnPullListener<T extends ViewHolder> {
-        void onPullDown(T headerViewHolder, int dy, double py);
-
+        void onPull(T headerViewHolder, int dy, double py);
         void onRefresh(T headerViewHolder);
     }
 }
