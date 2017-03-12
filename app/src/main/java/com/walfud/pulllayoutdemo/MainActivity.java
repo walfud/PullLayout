@@ -4,9 +4,13 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewPropertyAnimator;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.BounceInterpolator;
@@ -16,11 +20,14 @@ import android.widget.Toast;
 
 import com.walfud.pulllayout.PullLayout;
 
+import java.util.Random;
+
 public class MainActivity extends Activity {
 
     public static final String TAG = "MainActivity";
 
     private PullLayout mPl;
+    private RecyclerView mRv;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,6 +146,32 @@ public class MainActivity extends Activity {
                         mPl.hideFooter();
                     }
                 }, 3 * 1000);
+            }
+        });
+
+        mRv = (RecyclerView) findViewById(R.id.rv);
+        mRv.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        mRv.setAdapter(new RecyclerView.Adapter() {
+            @Override
+            public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+                TextView tv = new TextView(MainActivity.this);
+                RecyclerView.LayoutParams layoutParams = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 100);
+                tv.setLayoutParams(layoutParams);
+                return new RecyclerView.ViewHolder(tv) {
+                };
+            }
+
+            @Override
+            public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+                TextView tv = (TextView) holder.itemView;
+                tv.setText(String.valueOf(position));
+                tv.setGravity(Gravity.CENTER);
+                holder.itemView.setBackgroundColor(0xFF000000 | new Random().nextInt(0x00FFFFFF));
+            }
+
+            @Override
+            public int getItemCount() {
+                return 20;
             }
         });
     }

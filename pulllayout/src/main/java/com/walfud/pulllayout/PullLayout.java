@@ -1,6 +1,7 @@
 package com.walfud.pulllayout;
 
 import android.content.Context;
+import android.support.v4.view.NestedScrollingParentHelper;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -20,9 +21,6 @@ public class PullLayout extends ViewGroup {
 
     private ViewHolder mHeaderViewHolder, mFooterViewHolder;
     private OnPullListener mOnPullDownListener, mOnPullUpListener;
-    private int mPointerStart, mPointerOld, mPointerNow;
-    private int mStartScroll;
-    private boolean mIsTouching;
 
     public PullLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -46,6 +44,7 @@ public class PullLayout extends ViewGroup {
 
             }
         });
+        mNestedScrollingParentHelper = new NestedScrollingParentHelper(this);
     }
 
     @Override
@@ -68,6 +67,10 @@ public class PullLayout extends ViewGroup {
             }
         }
     }
+
+    private int mPointerStart, mPointerOld, mPointerNow;
+    private int mStartScroll;
+    private boolean mIsTouching;
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
@@ -98,69 +101,14 @@ public class PullLayout extends ViewGroup {
                 isHandle = true;
                 break;
             case MotionEvent.ACTION_MOVE: {
-                if (distance > 0 && mHeaderViewHolder != null) {
-                    int headerHeight = mHeaderViewHolder.view.getHeight();
-                    if (headerHeight != 0) {
-                        if (distance < headerHeight * MAX_THRESHOLD) {
-                            scrollTo(0, -distance);
-                            isHandle = true;
-                        } else {
-                            // Over Down
-                            scrollTo(0, -(int) (headerHeight * MAX_THRESHOLD));
-                        }
-                    }
-                }
-                if (distance < 0 && mFooterViewHolder != null) {
-                    int footerHeight = mFooterViewHolder.view.getHeight();
-                    if (footerHeight != 0) {
-                        if (Math.abs(distance) < footerHeight * MAX_THRESHOLD) {
-                            scrollTo(0, -distance);
-                            isHandle = true;
-                        } else {
-                            // Over Up
-                            scrollTo(0, (int) (footerHeight * MAX_THRESHOLD));
-                        }
-                    }
-                }
+                isHandle = handleHeaderScroll(distance) || handleFooterScroll(distance);
                 break;
             }
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
                 mIsTouching = false;
-                if (distance > 0 && mHeaderViewHolder != null) {
-                    final int headerHeight = mHeaderViewHolder.view.getHeight();
-                    if (distance < headerHeight) {
-                        // Back to top
-                        scrollY(0, null);
-                    } else {
-                        // Scroll to refresh
-                        scrollY(-headerHeight, new Runnable() {
-                            @Override
-                            public void run() {
-                                if (mOnPullDownListener != null) {
-                                    mOnPullDownListener.onRefresh(mHeaderViewHolder);
-                                }
-                            }
-                        });
-                    }
-                }
-                if (distance < 0 && mFooterViewHolder != null) {
-                    final int footerHeight = mFooterViewHolder.view.getHeight();
-                    if (Math.abs(distance) < footerHeight) {
-                        // Back to top
-                        scrollY(0, null);
-                    } else {
-                        // Scroll to refresh
-                        scrollY(footerHeight, new Runnable() {
-                            @Override
-                            public void run() {
-                                if (mOnPullUpListener != null) {
-                                    mOnPullUpListener.onRefresh(mFooterViewHolder);
-                                }
-                            }
-                        });
-                    }
-                }
+                handleHeaderStop();
+                handleFooterStop();
                 isHandle = true;
                 break;
             default:
@@ -170,6 +118,50 @@ public class PullLayout extends ViewGroup {
 
         mPointerOld = mPointerNow;
         return isHandle;
+    }
+
+    private NestedScrollingParentHelper mNestedScrollingParentHelper;
+
+    @Override
+    public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
+        return true;
+    }
+
+    @Override
+    public void onNestedScrollAccepted(View child, View target, int nestedScrollAxes) {
+        mNestedScrollingParentHelper.onNestedScrollAccepted(child, target, nestedScrollAxes);
+    }
+
+    @Override
+    public void onStopNestedScroll(View target) {
+        mNestedScrollingParentHelper.onStopNestedScroll(target);
+    }
+
+    @Override
+    public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed) {
+        Log.i(TAG, String.format("onNestedScroll: consumeX=%d, consumeY=%d, unconsumeX=%d, unconsumeY=%d", dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed));
+
+        scrollBy(dxUnconsumed, dyUnconsumed);
+    }
+
+    @Override
+    public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
+        Log.i(TAG, String.format("onNestedPreScroll: dx=%d, dy=%d, consumeX=%d, consumeY=%d", dx, dy, consumed[0], consumed[1]));
+    }
+
+    @Override
+    public boolean onNestedFling(View target, float velocityX, float velocityY, boolean consumed) {
+        return false;
+    }
+
+    @Override
+    public boolean onNestedPreFling(View target, float velocityX, float velocityY) {
+        return false;
+    }
+
+    @Override
+    public int getNestedScrollAxes() {
+        return mNestedScrollingParentHelper.getNestedScrollAxes();
     }
 
     // Function
@@ -252,6 +244,83 @@ public class PullLayout extends ViewGroup {
         }
 
         return true;
+    }
+
+    private boolean handleHeaderScroll(int distance) {
+        boolean isHandle = false;
+
+        if (distance > 0 && mHeaderViewHolder != null) {
+            int headerHeight = mHeaderViewHolder.view.getHeight();
+            if (headerHeight != 0) {
+                if (distance < headerHeight * MAX_THRESHOLD) {
+                    scrollTo(0, -distance);
+                    isHandle = true;
+                } else {
+                    // Over Down
+                    scrollTo(0, -(int) (headerHeight * MAX_THRESHOLD));
+                }
+            }
+        }
+
+        return isHandle;
+    }
+    private boolean handleFooterScroll(int distance) {
+        boolean isHandle = false;
+
+        if (distance < 0 && mFooterViewHolder != null) {
+            int footerHeight = mFooterViewHolder.view.getHeight();
+            if (footerHeight != 0) {
+                if (Math.abs(distance) < footerHeight * MAX_THRESHOLD) {
+                    scrollTo(0, -distance);
+                    isHandle = true;
+                } else {
+                    // Over Up
+                    scrollTo(0, (int) (footerHeight * MAX_THRESHOLD));
+                }
+            }
+        }
+
+        return isHandle;
+    }
+    private void handleHeaderStop() {
+        int scrollY = getScrollY();
+        if (scrollY < 0 && mHeaderViewHolder != null) {
+            final int headerHeight = mHeaderViewHolder.view.getHeight();
+            if (Math.abs(scrollY) < headerHeight) {
+                // Back to top
+                scrollY(0, null);
+            } else {
+                // Scroll to refresh
+                scrollY(-headerHeight, new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mOnPullDownListener != null) {
+                            mOnPullDownListener.onRefresh(mHeaderViewHolder);
+                        }
+                    }
+                });
+            }
+        }
+    }
+    private void handleFooterStop() {
+        int scrollY = getScrollY();
+        if (scrollY > 0 && mFooterViewHolder != null) {
+            final int footerHeight = mFooterViewHolder.view.getHeight();
+            if (scrollY < footerHeight) {
+                // Back to top
+                scrollY(0, null);
+            } else {
+                // Scroll to refresh
+                scrollY(footerHeight, new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mOnPullUpListener != null) {
+                            mOnPullUpListener.onRefresh(mFooterViewHolder);
+                        }
+                    }
+                });
+            }
+        }
     }
 
     //
