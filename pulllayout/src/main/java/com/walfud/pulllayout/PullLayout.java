@@ -101,14 +101,38 @@ public class PullLayout extends ViewGroup {
                 isHandle = true;
                 break;
             case MotionEvent.ACTION_MOVE: {
-                isHandle = handleHeaderScroll(distance) || handleFooterScroll(distance);
+                if (distance > 0 && mHeaderViewHolder != null) {
+                    isHandle = handleScroll(distance, mHeaderViewHolder.view.getHeight());
+                }
+                if (distance < 0 && mFooterViewHolder != null) {
+                    isHandle |= handleScroll(distance, -mFooterViewHolder.view.getHeight());
+                }
                 break;
             }
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
                 mIsTouching = false;
-                handleHeaderStop();
-                handleFooterStop();
+                int scrollY = getScrollY();
+                if (scrollY < 0 && mHeaderViewHolder != null) {
+                    handleStop(scrollY, -mHeaderViewHolder.view.getHeight(), new Runnable() {
+                        @Override
+                        public void run() {
+                            if (mOnPullDownListener != null) {
+                                mOnPullDownListener.onRefresh(mHeaderViewHolder);
+                            }
+                        }
+                    });
+                }
+                if (scrollY > 0 && mFooterViewHolder != null) {
+                    handleStop(scrollY, mFooterViewHolder.view.getHeight(), new Runnable() {
+                        @Override
+                        public void run() {
+                            if (mOnPullUpListener != null) {
+                                mOnPullUpListener.onRefresh(mFooterViewHolder);
+                            }
+                        }
+                    });
+                }
                 isHandle = true;
                 break;
             default:
@@ -246,80 +270,29 @@ public class PullLayout extends ViewGroup {
         return true;
     }
 
-    private boolean handleHeaderScroll(int distance) {
+    private boolean handleScroll(int distance, int maxDistance) {
         boolean isHandle = false;
 
-        if (distance > 0 && mHeaderViewHolder != null) {
-            int headerHeight = mHeaderViewHolder.view.getHeight();
-            if (headerHeight != 0) {
-                if (distance < headerHeight * MAX_THRESHOLD) {
-                    scrollTo(0, -distance);
-                    isHandle = true;
-                } else {
-                    // Over Down
-                    scrollTo(0, -(int) (headerHeight * MAX_THRESHOLD));
-                }
+        if (maxDistance != 0) {
+            if (Math.abs(distance) < Math.abs(maxDistance * MAX_THRESHOLD)) {
+                scrollTo(0, -distance);
+                isHandle = true;
+            } else {
+                // Over Drag
+                scrollTo(0, (int) (-maxDistance * MAX_THRESHOLD));
             }
         }
 
         return isHandle;
     }
-    private boolean handleFooterScroll(int distance) {
-        boolean isHandle = false;
 
-        if (distance < 0 && mFooterViewHolder != null) {
-            int footerHeight = mFooterViewHolder.view.getHeight();
-            if (footerHeight != 0) {
-                if (Math.abs(distance) < footerHeight * MAX_THRESHOLD) {
-                    scrollTo(0, -distance);
-                    isHandle = true;
-                } else {
-                    // Over Up
-                    scrollTo(0, (int) (footerHeight * MAX_THRESHOLD));
-                }
-            }
-        }
-
-        return isHandle;
-    }
-    private void handleHeaderStop() {
-        int scrollY = getScrollY();
-        if (scrollY < 0 && mHeaderViewHolder != null) {
-            final int headerHeight = mHeaderViewHolder.view.getHeight();
-            if (Math.abs(scrollY) < headerHeight) {
-                // Back to top
-                scrollY(0, null);
-            } else {
-                // Scroll to refresh
-                scrollY(-headerHeight, new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mOnPullDownListener != null) {
-                            mOnPullDownListener.onRefresh(mHeaderViewHolder);
-                        }
-                    }
-                });
-            }
-        }
-    }
-    private void handleFooterStop() {
-        int scrollY = getScrollY();
-        if (scrollY > 0 && mFooterViewHolder != null) {
-            final int footerHeight = mFooterViewHolder.view.getHeight();
-            if (scrollY < footerHeight) {
-                // Back to top
-                scrollY(0, null);
-            } else {
-                // Scroll to refresh
-                scrollY(footerHeight, new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mOnPullUpListener != null) {
-                            mOnPullUpListener.onRefresh(mFooterViewHolder);
-                        }
-                    }
-                });
-            }
+    private void handleStop(int scrollY, int threshold, Runnable overScrollRunnable) {
+        if (Math.abs(scrollY) < Math.abs(threshold)) {
+            // Back to top
+            scrollY(0, null);
+        } else {
+            // Scroll to refresh
+            scrollY(threshold, overScrollRunnable);
         }
     }
 
