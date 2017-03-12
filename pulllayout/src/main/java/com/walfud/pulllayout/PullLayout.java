@@ -225,6 +225,7 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
         if (from < to) {
             // from >>> to
             scrollTo(0, Math.min(from + FLING_SPEED, to));
+            removeCallbacks(mFlingRunnable);
             postOnAnimation(mFlingRunnable = new Runnable() {
                 @Override
                 public void run() {
@@ -236,6 +237,7 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
         } else if (to < from) {
             // to <<< from
             scrollTo(0, Math.max(from - FLING_SPEED, to));
+            removeCallbacks(mFlingRunnable);
             postOnAnimation(mFlingRunnable = new Runnable() {
                 @Override
                 public void run() {
