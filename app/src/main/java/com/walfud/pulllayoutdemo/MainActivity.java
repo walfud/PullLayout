@@ -59,6 +59,12 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public void onStart(HeaderViewHolder headerViewHolder) {
+                mPl.setFooterEnable(false);
+                Log.e(TAG, "onStart: header");
+            }
+
+            @Override
             public void onPull(HeaderViewHolder headerViewHolder, int dy, double py) {
                 ImageView iv = headerViewHolder.iv;
                 TextView tv = headerViewHolder.tv;
@@ -72,6 +78,8 @@ public class MainActivity extends Activity {
             @Override
             public void onRefresh(HeaderViewHolder headerViewHolder) {
                 Log.e(TAG, "onRefresh: ");
+
+                mPl.setHeaderEnable(false);
 
                 final ImageView iv = headerViewHolder.iv;
                 TextView tv = headerViewHolder.tv;
@@ -87,6 +95,8 @@ public class MainActivity extends Activity {
                             mAnim = null;
                         }
                         mPl.hideHeader();
+                        mPl.setFooterEnable(true);
+                        mRv.getAdapter().notifyDataSetChanged();
                     }
                 }, 3 * 1000);
             }
@@ -113,6 +123,12 @@ public class MainActivity extends Activity {
                         });
                     }
                 });
+            }
+
+            @Override
+            public void onStart(FooterViewHolder footerViewHolder) {
+                mPl.setHeaderEnable(false);
+                Log.e(TAG, "onStart: footer");
             }
 
             @Override
@@ -144,6 +160,8 @@ public class MainActivity extends Activity {
                             mAnim = null;
                         }
                         mPl.hideFooter();
+                        mPl.setHeaderEnable(true);
+                        mRv.getAdapter().notifyDataSetChanged();
                     }
                 }, 3 * 1000);
             }
