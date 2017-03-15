@@ -60,7 +60,6 @@ public class MainActivity extends Activity {
 
             @Override
             public void onStart(HeaderViewHolder headerViewHolder) {
-                mPl.setFooterEnable(false);
                 Log.e(TAG, "onStart: header");
             }
 
@@ -79,6 +78,8 @@ public class MainActivity extends Activity {
             public void onRefresh(HeaderViewHolder headerViewHolder) {
                 Log.e(TAG, "onRefresh: ");
 
+                mPl.setEnable(false);
+
                 final ImageView iv = headerViewHolder.iv;
                 TextView tv = headerViewHolder.tv;
 
@@ -93,10 +94,10 @@ public class MainActivity extends Activity {
                             mAnim = null;
                         }
                         mPl.hideHeader();
-                        mPl.setFooterEnable(true);
+                        mPl.setEnable(true);
                         mRv.getAdapter().notifyDataSetChanged();
                     }
-                }, 3 * 1000);
+                }, 2 * 1000);
             }
         });
 
@@ -125,7 +126,6 @@ public class MainActivity extends Activity {
 
             @Override
             public void onStart(FooterViewHolder footerViewHolder) {
-                mPl.setHeaderEnable(false);
                 Log.e(TAG, "onStart: footer");
             }
 
@@ -144,6 +144,8 @@ public class MainActivity extends Activity {
             public void onRefresh(FooterViewHolder footerViewHolder) {
                 Log.e(TAG, "onRefresh: ");
 
+                mPl.setEnable(false);
+
                 final ImageView iv = footerViewHolder.iv;
                 TextView tv = footerViewHolder.tv;
 
@@ -158,10 +160,10 @@ public class MainActivity extends Activity {
                             mAnim = null;
                         }
                         mPl.hideFooter();
-                        mPl.setHeaderEnable(true);
+                        mPl.setEnable(true);
                         mRv.getAdapter().notifyDataSetChanged();
                     }
-                }, 3 * 1000);
+                }, 2 * 1000);
             }
         });
 
@@ -187,7 +189,7 @@ public class MainActivity extends Activity {
 
             @Override
             public int getItemCount() {
-                return 20;
+                return 17;
             }
         });
     }

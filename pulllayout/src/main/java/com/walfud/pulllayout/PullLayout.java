@@ -21,7 +21,7 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
     public static final String TAG = "PullLayout";
 
     private static final double MAX_THRESHOLD = 2;
-    private static final int FLING_SPEED = 2;
+    private static final int FLING_SPEED = 20;
 
     private ViewHolder mHeaderViewHolder, mFooterViewHolder;
     private OnPullListener mOnPullDownListener, mOnPullUpListener;
@@ -36,6 +36,7 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
 
                 int distance = Math.abs(scrollY);
                 if (scrollY < 0) {
+                    // Header
                     if (mOnPullDownListener != null) {
                         if (oldScrollY * scrollY <= 0) {
                             mOnPullDownListener.onStart(mHeaderViewHolder);
@@ -43,6 +44,7 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
                         mOnPullDownListener.onPull(mHeaderViewHolder, distance, distance / (double) mHeaderViewHolder.view.getHeight());
                     }
                 } else if (scrollY > 0) {
+                    // Footer
                     if (mOnPullUpListener != null) {
                         if (oldScrollY * scrollY <= 0) {
                             mOnPullUpListener.onStart(mFooterViewHolder);
@@ -55,7 +57,7 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
         });
         mNestedScrollingParentHelper = new NestedScrollingParentHelper(this);
         mTouchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
-        mHeaderEnable = mFooterEnable = true;
+        mEnable = true;
     }
 
     @Override
@@ -79,7 +81,7 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
         }
     }
 
-    private int mPointerStart, mPointerOld, mPointerNow;
+    private int mPointerStart, mPointerNow;
     private int mStartScroll;
 
     private int mTouchSlop;
@@ -88,10 +90,14 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (!mEnable) {
+            return false;
+        }
+
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mStopFling = true;
-                mPointerStart = mPointerOld = (int) ev.getY();
+                mPointerStart = (int) ev.getY();
                 mStartScroll = getScrollY();
                 mTouchTarget = getTouchTarget(this, (int) ev.getRawX(), (int) ev.getRawY());
                 mInterceptMoveAction = !(mTouchTarget instanceof NestedScrollingChild);
@@ -105,9 +111,13 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (!mEnable) {
+            return false;
+        }
+
         mPointerNow = (int) event.getY();
         int distance = mPointerNow - mPointerStart + (-mStartScroll);
-        boolean isHandle = false;
+        boolean isHandle;
 
         Log.i(TAG, String.format("onTouchEvent(%d): start=%d, curr=%d, distance=%d, scroll=%d",
                 event.getAction(), mPointerStart, mPointerNow, distance, getScrollY()));
@@ -131,7 +141,6 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
                 break;
         }
 
-        mPointerOld = mPointerNow;
         return isHandle;
     }
 
@@ -140,11 +149,15 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
 
     @Override
     public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
+        if (!mEnable) {
+            return false;
+        }
+
+        mStopFling = true;
         mStartScroll = getScrollY();
         mScrollDistance = 0;
-        mStopFling = true;
 
-        Log.i(TAG, "onStartNestedScroll: ");
+        Log.i(TAG, String.format("onStartNestedScroll: startScroll=%d, distance=%d", mStartScroll, mScrollDistance));
         return true;
     }
 
@@ -174,7 +187,8 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
         if (getScrollY() != 0) {
             consumed[0] = dx;
             consumed[1] = dy;
-            onScroll(-(mScrollDistance += dy));
+            mScrollDistance += dy;
+            onScroll(-(mStartScroll + mScrollDistance));
         }
         Log.i(TAG, String.format("onNestedPreScroll: dx=%d, dy=%d, consumeX=%d, consumeY=%d", dx, dy, consumed[0], consumed[1]));
     }
@@ -204,13 +218,6 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
         return this;
     }
 
-    private boolean mHeaderEnable;
-    public PullLayout setHeaderEnable(boolean enable) {
-        mHeaderEnable = enable;
-
-        return this;
-    }
-
     public PullLayout hideHeader() {
         scrollY(0, null);
 
@@ -226,22 +233,20 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
         return this;
     }
 
-    private boolean mFooterEnable;
-    public PullLayout setFooterEnable(boolean enable) {
-        mFooterEnable = enable;
-
-        return this;
-    }
-
     public PullLayout hideFooter() {
         scrollY(0, null);
 
         return this;
     }
 
-    // internal
-    private Runnable mFlingRunnable;
+    private boolean mEnable;
+    public PullLayout setEnable(boolean enable) {
+        mEnable = enable;
 
+        return this;
+    }
+
+    // internal
     private boolean scrollY(final int to, final Runnable endWith) {
         if (mStopFling) {
             return false;
@@ -251,7 +256,7 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
         if (from < to) {
             // Go Up
             scrollTo(0, Math.min(from + FLING_SPEED, to));
-            postOnAnimation(mFlingRunnable = new Runnable() {
+            postOnAnimation(new Runnable() {
                 @Override
                 public void run() {
                     scrollY(to, endWith);
@@ -262,7 +267,7 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
         } else if (to < from) {
             // Go Down
             scrollTo(0, Math.max(from - FLING_SPEED, to));
-            postOnAnimation(mFlingRunnable = new Runnable() {
+            postOnAnimation(new Runnable() {
                 @Override
                 public void run() {
                     scrollY(to, endWith);
@@ -271,7 +276,6 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
 
             Log.i(TAG, String.format("scrollY: from=%d, next=%d, to=%d", from, Math.max(from - FLING_SPEED, to), to));
         } else {
-            mFlingRunnable = null;
             post(endWith);
 
             Log.i(TAG, String.format("scrollY: END from=%d, to=%d", from, to));
@@ -303,10 +307,10 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
         }
 
         boolean isHandle = false;
-        if (distance > 0 && mHeaderViewHolder != null && mHeaderEnable) {
+        if (distance > 0 && mHeaderViewHolder != null) {
             isHandle = handleScroll(distance, mHeaderViewHolder.view.getHeight());
         }
-        if (distance < 0 && mFooterViewHolder != null && mFooterEnable) {
+        if (distance < 0 && mFooterViewHolder != null) {
             isHandle |= handleScroll(distance, -mFooterViewHolder.view.getHeight());
         }
         return isHandle;
@@ -316,7 +320,7 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
         mStopFling = false;
 
         int scrollY = getScrollY();
-        if (scrollY < 0 && mHeaderViewHolder != null && mHeaderEnable) {
+        if (scrollY < 0 && mHeaderViewHolder != null) {
             handleStop(scrollY, -mHeaderViewHolder.view.getHeight(), new Runnable() {
                 @Override
                 public void run() {
@@ -326,7 +330,7 @@ public class PullLayout extends ViewGroup implements NestedScrollingParent {
                 }
             });
         }
-        if (scrollY > 0 && mFooterViewHolder != null && mFooterEnable) {
+        if (scrollY > 0 && mFooterViewHolder != null) {
             handleStop(scrollY, mFooterViewHolder.view.getHeight(), new Runnable() {
                 @Override
                 public void run() {
