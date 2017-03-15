@@ -79,8 +79,6 @@ public class MainActivity extends Activity {
             public void onRefresh(HeaderViewHolder headerViewHolder) {
                 Log.e(TAG, "onRefresh: ");
 
-                mPl.setHeaderEnable(false);
-
                 final ImageView iv = headerViewHolder.iv;
                 TextView tv = headerViewHolder.tv;
 
